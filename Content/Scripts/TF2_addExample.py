@@ -1,7 +1,7 @@
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+#import tensorflow.compat.v1 as tf
+#tf.disable_v2_behavior()
 
-#import tensorflow as tf
+import tensorflow as tf
 import unreal_engine as ue
 from TFPluginAPI import TFPluginAPI
 
@@ -9,14 +9,11 @@ class ExampleAPI(TFPluginAPI):
 
 	#expected optional api: setup your model for training
 	def onSetup(self):
-		self.sess = tf.InteractiveSession()
-		#self.graph = tf.get_default_graph()
 
-		self.a = tf.placeholder(tf.float32)
-		self.b = tf.placeholder(tf.float32)
+		self.a = tf.Variable([0.0], tf.float32)
+		self.b = tf.Variable([0.0], tf.float32)
 
-		#operation
-		self.c = self.a + self.b
+		self.op = tf.Variable(True, tf.bool)
 		pass
 		
 	#expected optional api: parse input object and return a result object, which will be converted to json for UE4
@@ -24,20 +21,26 @@ class ExampleAPI(TFPluginAPI):
 		
 		print(jsonInput)
 
-		feed_dict = {self.a: jsonInput['a'], self.b: jsonInput['b']}
+		self.a = tf.dtypes.cast(jsonInput['a'], tf.float32)
+		self.b = tf.dtypes.cast(jsonInput['b'], tf.float32)
 
-		rawResult = self.sess.run(self.c,feed_dict)
+		if self.op:
+			return tf.add(self.a, self.b).numpy().tolist()
+			
+		else:
+			return tf.subtract(self.a, self.b).numpy().tolist()
 
-		return {'c':rawResult.tolist()}
+		
+	
 
 	#custom function to change the op
 	def changeOperation(self, type):
 		if(type == '+'):
-			self.c = self.a + self.b
+			self.op = True
 
 		elif(type == '-'):
-			self.c = self.a - self.b
-	
+			self.op = False
+
 	def getVersion(self, jsonInput):
 
 		ver = tf.__version__
