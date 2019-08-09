@@ -10,7 +10,7 @@ public class UnrealEnginePython : ModuleRules
 
     // leave this string as empty for triggering auto-discovery of python installations...
     private string PythonHome = "";
-    bool UseThirdPartyPython = true;    //embedded
+    bool UseThirdPartyPython = false;    //embedded
 	bool AutoAddProjectScriptsInPackaging = true;
 
 	//Or use the one included in third party folder
@@ -139,7 +139,8 @@ public class UnrealEnginePython : ModuleRules
         "C:/Program Files/Python36",
         "C:/Program Files/Python35",
         "C:/Python27",
-        "C:/IntelPython35"
+        "C:/IntelPython35",
+        "C:/Users/elect/AppData/Local/Programs/Python/Python36"
     };
 
     private string[] macKnownPaths =

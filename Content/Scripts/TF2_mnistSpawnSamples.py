@@ -1,15 +1,17 @@
 #converted for ue4 use from
 #https://github.com/tensorflow/docs/blob/master/site/en/tutorials/_index.ipynb
 
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+#import tensorflow.compat.v1 as tf
+#tf.disable_v2_behavior()
 
-#import tensorflow as tf
+import tensorflow as tf
+mnist = tf.keras.datasets.mnist
+
 import unreal_engine as ue
 from TFPluginAPI import TFPluginAPI
 
 #additional includes
-from tensorflow.python.keras import backend as K	#to ensure things work well with multi-threading
+#from tensorflow.python.keras import backend as K	#to ensure things work well with multi-threading
 import numpy as np   	#for reshaping input
 import operator      	#used for getting max prediction from 1x10 output array
 import random
@@ -59,70 +61,58 @@ class MnistTutorial(TFPluginAPI):
 		x_raw = jsonInput['pixels']
 		x = np.reshape(x_raw, (1, 28, 28))
 
-		#run the input through our network using stored model and graph
-		with self.graph.as_default():
-			output = self.model.predict(x)
+		predictions = self.model.predict(x)
+		#ue.log(predictions)
 
-			#convert output array to max value prediction index (0-10)
-			index, value = max(enumerate(output[0]), key=operator.itemgetter(1))
+		# #run the input through our network using stored model and graph
+		# with self.graph.as_default():
+		# 	output = self.model.predict(x)
 
-			#Optionally log the output so you can see the weights for each value and final prediction
-			ue.log('Output array: ' + str(output) + ',\nPrediction: ' + str(index))
+		#convert output array to max value prediction index (0-10)
+		#index, value = max(enumerate(output[0]), key=operator.itemgetter(1))
 
-			result['prediction'] = index
+		index, value = max(enumerate(predictions[0]), key=operator.itemgetter(1))
+
+		#Optionally log the output so you can see the weights for each value and final prediction
+		ue.log('Predictions array: ' + str(predictions) + ',\nPrediction: ' + str(index))
+
+		result['prediction'] = index
 
 		return result
 
 	#Called when TensorflowComponent signals begin training (default: begin play)
+	#@tf.function
 	def onBeginTraining(self):
 		ue.log("starting MnistTutorial training")
 
 		#training parameters
 		self.batch_size = 128
 		num_classes = 10
-		epochs = 3 		
-
-		#reset the session each time we get training calls
-		self.kerasCallback = self.StopCallback(self)
-		K.clear_session()
-
-		#load mnist data set
-		mnist = tf.keras.datasets.mnist
-		(x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-		#rescale 0-255 -> 0-1.0
+		epochs = 1 		
+		
+		(x_train, y_train),(x_test, y_test) = mnist.load_data()
 		x_train, x_test = x_train / 255.0, x_test / 255.0
 
-		#define model
 		model = tf.keras.models.Sequential([
-			tf.keras.layers.Flatten(),
+			tf.keras.layers.Flatten(input_shape=(28, 28)),
 			tf.keras.layers.Dense(512, activation=tf.nn.relu),
 			tf.keras.layers.Dropout(0.2),
 			tf.keras.layers.Dense(num_classes, activation=tf.nn.softmax)
-		])
+			])
+		model.compile(optimizer='adam',
+					loss='sparse_categorical_crossentropy',
+					metrics=['accuracy'])
 
-		model.compile(	optimizer='adam',
-						loss='sparse_categorical_crossentropy',
-						metrics=['accuracy'])
-
-		#pre-fill our callEvent data to optimize callbacks
-		jsonPixels = {}
-		size = {'x':28, 'y':28}
-		jsonPixels['size'] = size
-		self.jsonPixels = jsonPixels
-		self.x_train = x_train
-
-		#this will do the actual training
-		model.fit(x_train, y_train,
-				  batch_size=self.batch_size,
-				  epochs=epochs,
-				  callbacks=[self.kerasCallback])
+		model.fit(x_train, y_train, epochs=epochs)
 		model.evaluate(x_test, y_test)
-
+		
+		# self.outer.jsonPixels['pixels'] = self.outer.x_train[index].ravel().tolist()
+		# self.outer.callEvent('PixelEvent', self.outer.jsonPixels, True)
+		
 		ue.log("Training complete.")
 
-		#store our model and graph for prediction
-		self.graph = tf.get_default_graph()
+		#store our model for prediction
+		#self.graph = tf.get_default_graph()
 		self.model = model
 
 #required function to get our api
