@@ -2,6 +2,7 @@
 	"name" : "tensorflow-ue4",
 	"pythonModules": {
 		"tensorflow-gpu": "2.0.0-beta1",
-		"h5py":"2.7.0"
+		"h5py":"2.7.0",
+		"PIL" : "Pillow"
 	}
 }
